@@ -11,7 +11,7 @@ import SplatNet2
 
 public class UploadResult: RequestType {
     public typealias ResponseType = [UploadResult.Response]
-    public var baseURL: URL = URL(string: "https://salmon-stats-api.yuki.games/api/")!
+    public var baseURL: URL = URL(unsafeString: "https://salmon-stats-api.yuki.games/api/")
     public var method: HTTPMethod = .post
     public var path: String = "results"
     public var encoding: ParameterEncoding = JSONEncoding.default
