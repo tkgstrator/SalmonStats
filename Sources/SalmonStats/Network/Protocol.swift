@@ -11,7 +11,7 @@ import SplatNet2
 
 extension RequestType {
     public var baseURL: URL {
-        URL(string: "https://salmon-stats-api.yuki.games/api/")!
+        URL(unsafeString: "https://salmon-stats-api.yuki.games/api/")
     }
 
     public var encoding: ParameterEncoding {

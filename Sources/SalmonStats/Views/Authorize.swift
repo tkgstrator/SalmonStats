@@ -27,7 +27,7 @@ public struct Authorize: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .webAuthenticationSession(isPresented: $isPresented, content: {
-                WebAuthenticationSession(url: URL(string: "https://salmon-stats-api.yuki.games/auth/twitter")!, callbackURLScheme: "salmon-stats") { callbackURL, _ in
+                WebAuthenticationSession(url: URL(unsafeString: "https://salmon-stats-api.yuki.games/auth/twitter"), callbackURLScheme: "salmon-stats") { callbackURL, _ in
                     if let apiToken = callbackURL?.absoluteString.capture(pattern: "api-token=(.*)", group: 1) {
                         manager.apiToken = apiToken
                         completionHandler(.success(apiToken))
