@@ -9,20 +9,24 @@ import Foundation
 import Alamofire
 import SplatNet2
 
-extension RequestType {
-    public var baseURL: URL {
+public extension RequestType {
+    var baseURL: URL {
         URL(unsafeString: "https://salmon-stats-api.yuki.games/api/")
     }
+    
+    var headers: [String: String]? {
+        nil
+    }
 
-    public var encoding: ParameterEncoding {
+    var encoding: ParameterEncoding {
         JSONEncoding.default
     }
     
-    public func asURLRequest() throws -> URLRequest {
+    func asURLRequest() throws -> URLRequest {
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
         request.httpMethod = method.rawValue
         request.allHTTPHeaderFields = headers
-        request.timeoutInterval = TimeInterval(20)
+        request.timeoutInterval = TimeInterval(30)
 
         if let params = parameters {
             request = try encoding.encode(request, with: params)

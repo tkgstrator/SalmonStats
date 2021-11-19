@@ -5,7 +5,7 @@ import CombineExpectations
 final class SalmonStatsTests: XCTestCase {
     func testGetPlayerLink() {
         do {
-            guard let json = Bundle.module.url(forResource: "coop", withExtension: "json") else { throw APIError.fatal }
+            guard let json = Bundle.module.url(forResource: "coop", withExtension: "json") else { throw SP2Error.fatal }
 
             let publisher = SalmonStats.shared.getResult(resultId: 100000)
             let recorder = publisher.record()

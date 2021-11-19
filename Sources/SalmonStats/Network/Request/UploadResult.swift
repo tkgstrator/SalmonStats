@@ -11,15 +11,14 @@ import SplatNet2
 
 public class UploadResult: RequestType {
     public typealias ResponseType = [UploadResult.Response]
-    public var baseURL: URL = URL(unsafeString: "https://salmon-stats-api.yuki.games/api/")
+    
     public var method: HTTPMethod = .post
     public var path: String = "results"
     public var encoding: ParameterEncoding = JSONEncoding.default
     public var parameters: Parameters?
     public var headers: [String : String]?
     
-    init(accessToken: String, results: [[String: Any]]) {
-        self.headers = ["Authorization": "Bearer \(accessToken)"]
+    init(results: [[String: Any]]) {
         self.parameters = ["results": results]
     }
 

@@ -15,7 +15,7 @@ public struct Authorize: ViewModifier {
     @State var task = Set<AnyCancellable>()
     let manager: SalmonStats
     
-    public typealias CompletionHandler = (Result<String, APIError>) -> Void
+    public typealias CompletionHandler = (Result<String, SP2Error>) -> Void
     let completionHandler: CompletionHandler
     
     public init(isPresented: Binding<Bool>, manager: SalmonStats, completionHandler: @escaping CompletionHandler) {
@@ -41,7 +41,7 @@ public struct Authorize: ViewModifier {
 }
 
 public extension View {
-    func authorizeToken(isPresented: Binding<Bool>, manager: SalmonStats, completion: @escaping (Result<String, APIError>) -> Void) -> some View {
+    func authorizeToken(isPresented: Binding<Bool>, manager: SalmonStats, completion: @escaping (Result<String, SP2Error>) -> Void) -> some View {
         self.modifier(Authorize(isPresented: isPresented, manager: manager) { response in
             completion(response)
         })

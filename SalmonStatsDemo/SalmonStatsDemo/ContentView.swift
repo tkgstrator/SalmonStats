@@ -18,7 +18,7 @@ struct ContentView: View {
 //    @State private var result: SplatNet2.Coop.Result
     @State private var task = Set<AnyCancellable>()
     @State private var isPresented: Bool = false
-    @State private var apiError: APIError?
+    @State private var SP2Error: SP2Error?
     private var queue = DispatchQueue(label: "Salmon Stats")
     
     var body: some View {
@@ -50,7 +50,7 @@ struct ContentView: View {
             Button(action: { getResultFromSalmonStats() }, label: {
                 Text("GET RESULT")
             })
-            .alert(item: $apiError) { error in
+            .alert(item: $SP2Error) { error in
                 Alert(title: Text("ERROR"), message: Text(error.localizedDescription))
             }
         }

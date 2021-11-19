@@ -9,8 +9,9 @@ import Foundation
 import Alamofire
 import SplatNet2
 
-public class ResultsStats: RequestType {
-    public typealias ResponseType = ResultsStats.Response
+public class Results: RequestType {
+    public typealias ResponseType = Results.Response
+    
     public var method: HTTPMethod = .get
     public var path: String
     public var parameters: Parameters?
@@ -27,8 +28,9 @@ public class ResultsStats: RequestType {
     }
     
     public struct Response: Codable {
-        public var currentPage: Int
-        public var lastPage: Int
-        public var results: [ResultStats.Response]
+        public let currentPage: Int
+        public let from, lastPage: Int
+        public let to, total: Int
+        public let results: [Result.Response]
     }
 }
