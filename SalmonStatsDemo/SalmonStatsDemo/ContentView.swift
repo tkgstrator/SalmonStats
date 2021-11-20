@@ -41,7 +41,7 @@ struct ContentView: View {
             Button(action: { isPresented.toggle() }, label: {
                 Text("LOGIN")
             })
-            .authorize(isPresented: $isPresented) { completion in
+                .authorizeToken(isPresented: $isPresented, manager: salmonstats) { completion in
                 print(completion)
             }
             Button(action: { getResultsFromSalmonStats() }, label: {

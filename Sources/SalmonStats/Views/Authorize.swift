@@ -15,7 +15,7 @@ public struct Authorize: ViewModifier {
     @State var task = Set<AnyCancellable>()
     let manager: SalmonStats
     
-    public typealias CompletionHandler = (Result<String, SP2Error>) -> Void
+    public typealias CompletionHandler = (Swift.Result<String, SP2Error>) -> Void
     let completionHandler: CompletionHandler
     
     public init(isPresented: Binding<Bool>, manager: SalmonStats, completionHandler: @escaping CompletionHandler) {
@@ -30,9 +30,9 @@ public struct Authorize: ViewModifier {
                 WebAuthenticationSession(url: URL(unsafeString: "https://salmon-stats-api.yuki.games/auth/twitter"), callbackURLScheme: "salmon-stats") { callbackURL, _ in
                     if let apiToken = callbackURL?.absoluteString.capture(pattern: "api-token=(.*)", group: 1) {
                         manager.apiToken = apiToken
-                        completionHandler(.success(apiToken))
+//                        completionHandler(.success(apiToken))
                     } else {
-                        completionHandler(.failure(.response))
+//                        completionHandler(.failure(.response))
                     }
                 }
                 .prefersEphemeralWebBrowserSession(false)
@@ -41,7 +41,7 @@ public struct Authorize: ViewModifier {
 }
 
 public extension View {
-    func authorizeToken(isPresented: Binding<Bool>, manager: SalmonStats, completion: @escaping (Result<String, SP2Error>) -> Void) -> some View {
+    func authorizeToken(isPresented: Binding<Bool>, manager: SalmonStats, completion: @escaping (Swift.Result<String, SP2Error>) -> Void) -> some View {
         self.modifier(Authorize(isPresented: isPresented, manager: manager) { response in
             completion(response)
         })
