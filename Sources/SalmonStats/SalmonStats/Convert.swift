@@ -21,7 +21,7 @@ extension Result.Response {
             jobResult: Result.JobResult(from: response),
             jobId: nil,
             myResult: Result.PlayerResult(
-                from: response.playerResults.first(where: { $0.playerId == playerId })!,
+                from: response.playerResults.first(where: { $0.playerId == playerId }) ?? response.playerResults.first!,
                 members: response.memberAccounts,
                 rareWeaponId: response.schedule.rareWeaponId
             ),

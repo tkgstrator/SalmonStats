@@ -11,7 +11,7 @@ import SplatNet2
 import CodableDictionary
 
 public class ResultStats: RequestType {
-    public typealias ResponseType = Result.Response
+    public typealias ResponseType = ResultStats.Response
     
     public var method: HTTPMethod = .get
     public var path: String
