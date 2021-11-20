@@ -15,81 +15,130 @@ import SplatNet2
 let salmonstats = SalmonStats()
 
 struct ContentView: View {
-//    @State private var result: SplatNet2.Coop.Result
     @State private var task = Set<AnyCancellable>()
-    @State private var isPresented: Bool = false
+    @State private var isPresented: [Bool] = Array(repeating: false, count: 2)
     @State private var SP2Error: SP2Error?
-    private var queue = DispatchQueue(label: "Salmon Stats")
     
     var body: some View {
-        List {
-//            HStack {
-//                Text("API TOKEN")
-//                Spacer()
-//                Text(SalmonStats.shared.apiToken ?? "-")
-//            }
-//            HStack {
-//                Text("PID")
-//                Spacer()
-//                Text(SalmonStats.shared.playerId ?? "-")
-//            }
-//            HStack {
-//                Text("SESSION")
-//                Spacer()
-//                Text(SplatNet2.shared.iksmSession ?? "-")
-//            }
-            Button(action: { isPresented.toggle() }, label: {
-                Text("LOGIN")
+        NavigationView(content: {
+            Form(content: {
+                Section(content: {
+                    Button(action: { isPresented[0].toggle() }, label: {
+                        Text("SplatNet2")
+                    })
+                        .authorize(isPresented: $isPresented[0], manager: salmonstats) { completion in
+                            print(completion)
+                        }
+                    Button(action: { isPresented[1].toggle() }, label: {
+                        Text("Salmon Stats")
+                    })
+                        .authorizeToken(isPresented: $isPresented[1], manager: salmonstats) { completion in
+                            print(completion)
+                        }
+                    
+                }, header: {
+                    Text("Authorize")
+                })
+                Section(content: {
+                    Button(action: {
+                        salmonstats.getMetadata(nsaid: "91d160aa84e88da6")
+                            .sink(receiveCompletion: { completion in
+                                print(completion)
+                            }, receiveValue: { response in
+                                print(response)
+                            })
+                            .store(in: &task)
+                    }, label: {
+                        Text("GET METADATA")
+                    })
+                    Button(action: {
+                        salmonstats.getPlayerMetadata(nsaid: "91d160aa84e88da6")
+                            .sink(receiveCompletion: { completion in
+                                print(completion)
+                            }, receiveValue: { response in
+                                print(response)
+                            })
+                            .store(in: &task)
+                    }, label: {
+                        Text("GET PLAYER METADATA")
+                    })
+                    
+                }, header: {
+                    Text("Metadata")
+                })
+                Section(content: {
+                    Button(action: {
+                        salmonstats.getResult(resultId: 1000000)
+                            .sink(receiveCompletion: { completion in
+                                print(completion)
+                            }, receiveValue: { response in
+                                print(response)
+                            })
+                            .store(in: &task)
+                    }, label: {
+                        Text("GET RESULT")
+                    })
+                    Button(action: { }, label: {
+                        Text("GET RESULTS")
+                    })
+                }, header: {
+                    Text("Salmon Stats")
+                })
+                Section(content: {
+                    Button(action: {
+                        salmonstats.getCoopResult(resultId: 3590)
+                            .sink(receiveCompletion: { completion in
+                                print(completion)
+                            }, receiveValue: { response in
+                                print(response)
+                            })
+                            .store(in: &task)
+                    }, label: {
+                        Text("GET RESULT")
+                    })
+                    Button(action: {
+                        salmonstats.getCoopResults(resultId: 3580)
+                            .sink(receiveCompletion: { completion in
+                                print(completion)
+                            }, receiveValue: { response in
+                                print(response)
+                            })
+                            .store(in: &task)
+                        
+                    }, label: {
+                        Text("GET RESULTS")
+                    })
+                }, header: {
+                    Text("SplatNet2")
+                })
             })
-                .authorizeToken(isPresented: $isPresented, manager: salmonstats) { completion in
-                print(completion)
-            }
-            Button(action: { getResultsFromSalmonStats() }, label: {
-                Text("GET RESULTS")
+                .navigationTitle("Salmon Stats Demo")
+            Form(content: {
+                HStack(content: {
+                    Text("nsaid")
+                    Spacer()
+                    Text(salmonstats.account.nsaid)
+                        .foregroundColor(.secondary)
+                })
+                HStack(content: {
+                    Text("iksm_session")
+                    Spacer()
+                    Text(salmonstats.account.iksmSession.prefix(16))
+                        .foregroundColor(.secondary)
+                })
+                HStack(content: {
+                    Text("api-token")
+                    Spacer()
+                    Text(salmonstats.apiToken == nil ? "" : salmonstats.apiToken!.prefix(16))
+                        .foregroundColor(.secondary)
+                })
             })
-            Button(action: { getResultFromSalmonStats() }, label: {
-                Text("GET RESULT")
-            })
+                .navigationTitle("User")
+            
+        })
             .alert(item: $SP2Error) { error in
                 Alert(title: Text("ERROR"), message: Text(error.localizedDescription))
             }
-        }
-    }
-    
-    private func getResultFromSalmonStats() {
-        let playerId = "91d160aa84e88da6"
-        salmonstats.getMetadata(nsaid: playerId)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
-            }, receiveValue: { respone in
-                salmonstats.getResults(nsaid: playerId, pageId: 1)
-                    .receive(on: DispatchQueue.main)
-                    .sink(receiveCompletion: { completion in
-                        switch completion {
-                        case .finished:
-                            break
-                        case .failure(let error):
-                            print(error)
-                        }
-                    }, receiveValue: { response in
-                        print(response)
-                    }).store(in: &task)
-            }).store(in: &task)
-    }
-    
-    private func getResultsFromSalmonStats() {
-        salmonstats.getResult(resultId: 1000000)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
-                switch completion {
-                case .finished:
-                    break
-                case .failure(let error):
-                    print(error)
-                }
-            }, receiveValue: { response in
-                print(dump(response))
-            }).store(in: &task)
     }
 }
 
