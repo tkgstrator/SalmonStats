@@ -8,8 +8,9 @@
 import Foundation
 import Alamofire
 import SplatNet2
+import CodableDictionary
 
-public class Result: RequestType {
+public class ResultStats: RequestType {
     public typealias ResponseType = Result.Response
     
     public var method: HTTPMethod = .get
@@ -26,7 +27,7 @@ public class Result: RequestType {
         public let id: Int
         public let scheduleId, startAt: String
         public let members: [String]
-        public let bossAppearances: [String: Int]
+        public let bossAppearances: CodableDictionary<Result.BossId, Int>
         public let uploaderUserId, clearWaves: Int
         public let failReasonId: Int?
         public let dangerRate, createdAt, updatedAt: String
@@ -52,20 +53,29 @@ public class Result: RequestType {
     public struct PlayerResult: Codable {
         public let playerId: String
         public let goldenEggs, powerEggs, rescue, death: Int
-        public let specialId, bossEliminationCount: Int
+        public let specialId: SpecialId
+        public let bossEliminationCount: Int
         public let gradePoint: Int?
         public let bossEliminations: BossEliminations
-        public let specialUses: [SpecialUs]
+        public let specialUses: [Special]
         public let weapons: [Weapon]
     }
 
     // MARK: - BossEliminations
     public struct BossEliminations: Codable {
-        public let counts: [String: Int]
+        public let counts: CodableDictionary<Result.BossId, Int>
+    }
+    
+    // MARK: - SpecialType
+    public enum SpecialId: Int, Codable, CaseIterable {
+        case splatBombLauncher = 2
+        case stingRay = 7
+        case inkjet = 8
+        case splashdown = 9
     }
 
-    // MARK: - SpecialUs
-    public struct SpecialUs: Codable {
+    // MARK: - Special
+    public struct Special: Codable {
         public let count: Int
     }
 

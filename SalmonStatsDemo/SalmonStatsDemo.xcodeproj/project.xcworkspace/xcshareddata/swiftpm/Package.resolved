@@ -24,8 +24,17 @@
         "repositoryURL": "/Users/devonly/Developer/SplatNet2",
         "state": {
           "branch": "hash",
-          "revision": "064887c91308d5638152cc2c986e84acc5fda931",
+          "revision": "b773ddcd2cc753cd24f510763450fe575ca35b90",
           "version": null
+        }
+      },
+      {
+        "package": "CodableDictionary",
+        "repositoryURL": "https://github.com/YOCKOW/SwiftCodableDictionary.git",
+        "state": {
+          "branch": null,
+          "revision": "0f09cec3062dfacc4e91f22753126c3ecbc28252",
+          "version": "1.0.1"
         }
       },
       {
