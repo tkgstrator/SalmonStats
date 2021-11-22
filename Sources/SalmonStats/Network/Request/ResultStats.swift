@@ -33,7 +33,7 @@ public class ResultStats: RequestType {
         public let dangerRate, createdAt, updatedAt: String
         public let goldenEggDelivered, powerEggCollected, bossAppearanceCount, bossEliminationCount: Int
         public let isEligibleForNoNightRecord: Bool
-        public let memberAccounts: [MemberAccount]
+        public let memberAccounts: [MemberAccount]?
         public let schedule: Schedule?
         public let playerResults: [PlayerResult]
         public let waves: [Wave]

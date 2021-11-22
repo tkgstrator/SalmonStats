@@ -31,6 +31,6 @@ public class ResultsStats: RequestType {
         public let currentPage: Int
         public let from, lastPage: Int
         public let to, total: Int
-        public let results: [Result.Response]
+        public let results: [ResultStats.Response]
     }
 }
