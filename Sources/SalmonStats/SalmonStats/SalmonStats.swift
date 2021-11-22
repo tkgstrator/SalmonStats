@@ -44,21 +44,55 @@ open class SalmonStats: SplatNet2 {
                 .receive(on: DispatchQueue(label: "SalmonStats"))
                 .flatMap({ publish(UploadResult(result: $0)) })
                 .sink(receiveCompletion: { completion in
-                    print(completion)
+                    switch completion {
+                        case .finished:
+                            break
+                        case .failure(let error):
+                            promise(.failure(error))
+                    }
                 }, receiveValue: { response in
                     promise(.success(response))
-                    print(response.count)
                 })
                 .store(in: &task)
         }
         .eraseToAnyPublisher()
     }
     
-    public func uploadResults(resultId: Int) -> AnyPublisher<[UploadResult.Response], SP2Error> {
-        Future { [self] promise in
+    public func uploadResults(resultId: Int) -> AnyPublisher<[(UploadResult.Response, Result.Response)], SP2Error> {
+        var results: [Result.Response] = []
+        return Future { [self] promise in
             getCoopResults(resultId: resultId)
-                .flatMap({ $0.chunked(by: 10).publisher })
+                .flatMap({ response -> Publishers.Sequence<[[Result.Response]], Never> in
+                    results = response
+                    return response.chunked(by: 10).publisher
+                })
                 .flatMap({ publish(UploadResult(results: $0)) })
+                .replaceError(with: UploadResult.ResponseType())
+                .collect()
+                .subscribe(on: DispatchQueue(label: "SalmonStats"))
+                .receive(on: DispatchQueue(label: "SalmonStats"))
+                .sink(receiveCompletion: { completion in
+                    switch completion {
+                        case .finished:
+                            break
+                        case .failure:
+                            promise(.failure(SP2Error.Common(.badrequest, nil)))
+                    }
+                }, receiveValue: { response in
+                    let salmonstats = response.flatMap({ $0 }).sorted(by: { $0.jobId < $1.jobId })
+                    promise(.success(zip(salmonstats, results).map({ ($0.0, $0.1) })))
+                })
+                .store(in: &task)
+        }
+        .eraseToAnyPublisher()
+    }
+    
+    public func getResults(from: Int, to: Int) -> AnyPublisher<[Result.Response], SP2Error> {
+        Future { [self] promise in
+            (from ... to).publisher
+                .flatMap(maxPublishers: .max(1), { getResults(pageId: $0) })
+                .subscribe(on: DispatchQueue(label: "SalmonStats"))
+                .receive(on: DispatchQueue(label: "SalmonStats"))
                 .collect()
                 .sink(receiveCompletion: { completion in
                     print(completion)
@@ -70,8 +104,8 @@ open class SalmonStats: SplatNet2 {
         .eraseToAnyPublisher()
     }
     
-    public func getResults(nsaid: String, pageId: Int, count: Int = 50) -> AnyPublisher<[Result.Response], SP2Error> {
-        let request = ResultsStats(nsaid: nsaid, pageId: pageId, count: count)
+    public func getResults(pageId: Int, count: Int = 50) -> AnyPublisher<[Result.Response], SP2Error> {
+        let request = ResultsStats(nsaid: account.nsaid, pageId: pageId, count: count)
         return Future { [self] promise in
             publish(request)
                 .subscribe(on: DispatchQueue(label: "SalmonStats"))
