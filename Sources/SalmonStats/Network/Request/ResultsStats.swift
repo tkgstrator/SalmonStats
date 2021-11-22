@@ -9,8 +9,8 @@ import Foundation
 import Alamofire
 import SplatNet2
 
-public class Results: RequestType {
-    public typealias ResponseType = Results.Response
+public class ResultsStats: RequestType {
+    public typealias ResponseType = ResultsStats.Response
     
     public var method: HTTPMethod = .get
     public var path: String

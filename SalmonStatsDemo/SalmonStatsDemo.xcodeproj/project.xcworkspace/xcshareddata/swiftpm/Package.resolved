@@ -11,6 +11,15 @@
         }
       },
       {
+        "package": "BetterSafariView",
+        "repositoryURL": "https://github.com/stleamist/BetterSafariView",
+        "state": {
+          "branch": null,
+          "revision": "be7248720af18c57c7a1348b20f6212379b28c6b",
+          "version": "2.4.0"
+        }
+      },
+      {
         "package": "KeychainAccess",
         "repositoryURL": "https://github.com/kishikawakatsumi/KeychainAccess.git",
         "state": {
@@ -24,7 +33,7 @@
         "repositoryURL": "/Users/devonly/Developer/SplatNet2",
         "state": {
           "branch": "hash",
-          "revision": "f41c49bc6c2168d1e3afaf77447a411b20711ab9",
+          "revision": "3847b7f790f9184bfb2b88bad7bac12eb9009deb",
           "version": null
         }
       },

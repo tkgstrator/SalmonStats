@@ -1,9 +1,12 @@
 import Foundation
 import SplatNet2
 import CodableDictionary
+import SwiftUI
 
 extension Result.Response {
     init(from response: ResultStats.Response, playerId: String) {
+        let schedule = SplatNet2.schedule.first(where: { $0.startTime == Date.timeIntervalSince1970(iso8601: response.scheduleId) })!
+        
         self.init(
             jobScore: nil,
             playerType: nil,
@@ -13,9 +16,9 @@ extension Result.Response {
                 .map({ Result.PlayerResult(
                     from: $0,
                     members: response.memberAccounts,
-                    rareWeaponId: response.schedule.rareWeaponId)
+                    rareWeaponId: response.schedule?.rareWeaponId)
                 }),
-            schedule: Result.Schedule(from: response.schedule),
+            schedule: Result.Schedule(from: response.scheduleId),
             kumaPoint: nil,
             waveDetails: response.waves.map({ Result.WaveDetail(from: $0) }),
             jobResult: Result.JobResult(from: response),
@@ -23,13 +26,13 @@ extension Result.Response {
             myResult: Result.PlayerResult(
                 from: response.playerResults.first(where: { $0.playerId == playerId }) ?? response.playerResults.first!,
                 members: response.memberAccounts,
-                rareWeaponId: response.schedule.rareWeaponId
+                rareWeaponId: response.schedule?.rareWeaponId
             ),
             gradePointDelta: nil,
             jobRate: nil,
-            startTime: Date.timeIntervalSince1970(iso8601: response.scheduleId),
+            startTime: schedule.startTime,
             playTime: Date.timeIntervalSince1970(iso8601: response.startAt),
-            endTime: Date.timeIntervalSince1970(iso8601: response.schedule.endAt),
+            endTime: schedule.endTime,
             bossCounts: CodableDictionary(uniqueKeysWithValues: response.bossAppearances.map({ ($0.key, Result.BossCount(bossId: $0.key, count: $0.value)) })),
             gradePoint: nil,
             dangerRate: Double(response.dangerRate) ?? 0.0
@@ -93,16 +96,16 @@ extension ResultStats.SpecialId {
         }
     }
     
-    var specialName: Result.SpecialName {
+    var specialName: String {
         switch self {
             case .splatBombLauncher:
-                return .splatBombLauncher
+                return "Splat-Bomb Launcher"
             case .stingRay:
-                return .stingRay
+                return "Sting Ray"
             case .inkjet:
-                return .inkjet
+                return "Inkjet"
             case .splashdown:
-                return .splashdown
+                return "Splashdown"
         }
     }
     
@@ -122,85 +125,132 @@ extension ResultStats.SpecialId {
 
 extension Result.BossCount {
     init(bossId: Result.BossId, count: Int) {
-        self.init(boss: Result.Boss(rawValue: bossId), count: count)
+        self.init(boss: Result.Boss(bossId: bossId), count: count)
+    }
+}
+
+extension Result.BossId {
+    var bossName: String {
+        switch self {
+            case .goldie:
+                return "Goldie"
+            case .steelhead:
+                return "Steelhead"
+            case .flyfish:
+                return "Flyfish"
+            case .scrapper:
+                return "Scrapper"
+            case .steelEel:
+                return "Steel Eel"
+            case .stinger:
+                return "Stinger"
+            case .maws:
+                return "Maws"
+            case .griller:
+                return "Griller"
+            case .drizzler:
+                return "Drizzler"
+        }
     }
 }
 
 extension Result.Boss {
-    init(rawValue: Result.BossId) {
-        switch rawValue {
+    enum BossName: String {
+        case go
+    }
+    
+    init(bossId: Result.BossId) {
+        switch bossId {
             case .goldie:
-                self = Result.Boss(name: .goldie, key: .sakelienGolden)
+                self = Result.Boss(name: bossId.rawValue, key: .sakelienGolden)
             case .steelhead:
-                self = Result.Boss(name: .steelhead, key: .sakelienBomber)
+                self = Result.Boss(name: bossId.rawValue, key: .sakelienBomber)
             case .flyfish:
-                self = Result.Boss(name: .flyfish, key: .sakelienCupTwins)
+                self = Result.Boss(name: bossId.rawValue, key: .sakelienCupTwins)
             case .steelEel:
-                self = Result.Boss(name: .steelEel, key: .sakelienSnake)
+                self = Result.Boss(name: bossId.rawValue, key: .sakelienSnake)
             case .scrapper:
-                self = Result.Boss(name: .scrapper, key: .sakelienShield)
+                self = Result.Boss(name: bossId.rawValue, key: .sakelienShield)
             case .stinger:
-                self = Result.Boss(name: .stinger, key: .sakelienTower)
+                self = Result.Boss(name: bossId.rawValue, key: .sakelienTower)
             case .maws:
-                self = Result.Boss(name: .maws, key: .sakediver)
+                self = Result.Boss(name: bossId.rawValue, key: .sakediver)
             case .griller:
-                self = Result.Boss(name: .griller, key: .sakedozer)
+                self = Result.Boss(name: bossId.rawValue, key: .sakedozer)
             case .drizzler:
-                self = Result.Boss(name: .drizzler, key: .sakerocket)
+                self = Result.Boss(name: bossId.rawValue, key: .sakerocket)
         }
     }
 }
 
 extension Result.Schedule {
-    init(from schedule: ResultStats.Schedule) {
+    init(from scheduleId: String) {
+        let schedule = SplatNet2.schedule.first(where: { $0.startTime == Date.timeIntervalSince1970(iso8601: scheduleId) })!
+        
         self.init(
             stage: Result.Stage(from: schedule),
-            weapons: schedule.weapons.map({ Result.WeaponList(weaponId: $0, rareWeaponId: schedule.rareWeaponId) }),
-            endTime: Date.timeIntervalSince1970(iso8601: schedule.endAt),
-            startTime: Date.timeIntervalSince1970(iso8601: schedule.scheduleId)
+            weapons: schedule.weaponList.map({ Result.WeaponList.init(weaponId: $0.rawValue, rareWeaponId: schedule.rareWeapon?.rawValue) }),
+            endTime: schedule.endTime,
+            startTime: schedule.startTime
         )
     }
 }
 
 extension Result.Stage {
-    init(from schedule: ResultStats.Schedule) {
+    init(from schedule: Schedule.Response) {
+        let stageImage: Result.StageType.Image = Result.StageType.Image(stageId: schedule.stageId)
         self.init(
-            name: Result.StageName(rawValue: schedule.stageId),
-            image: "" // ないものはしょうがないので空欄で適当に埋める
+            name: stageImage.stageName,
+            image: stageImage
         )
     }
 }
 
-extension Result.StageName {
-    init(rawValue: Int) {
-        switch rawValue {
-            case 0:
+extension Result.StageType.Image {
+    init(stageId: Schedule.StageId) {
+        switch stageId {
+            case .shakeup:
                 self = .shakeup
-            case 1:
+            case .shakeship:
                 self = .shakeship
-            case 2:
+            case .shakehouse:
                 self = .shakehouse
-            case 3:
+            case .shakelift:
                 self = .shakelift
-            case 4:
+            case .shakeride:
                 self = .shakeride
-            default:
-                self = .shakeup
         }
+    }
+    
+    var stageName: String {
+        switch self {
+            case .shakeup:
+                return "Spawning Grounds"
+            case .shakeship:
+                return "Marooner's Bay"
+            case .shakehouse:
+                return "Lost Outpost"
+            case .shakelift:
+                return "Salmonid Smokeyard"
+            case .shakeride:
+                return "Ruins of Ark Polaris"
+        }
+        
     }
 }
 
 extension Result.WeaponList {
     init(weaponId: Int, rareWeaponId: Int?) {
+        // クマサンブキが支給されるとき
         if let rareWeaponId = rareWeaponId {
             self.init(
-                id: String(weaponId),
+                id: WeaponType.WeaponId(rawValue: String(weaponId))!,
                 weapon: nil,
                 coopSpecialWeapon: Result.Brand(weaponId: rareWeaponId)
             )
         }
         self.init(
-            id: String(weaponId),
+            id: WeaponType.WeaponId(rawValue: String(weaponId))!,
             weapon: Result.Brand(weaponId: weaponId),
             coopSpecialWeapon: nil
         )
@@ -210,10 +260,11 @@ extension Result.WeaponList {
 extension Result.Brand {
     init?(weaponId: Int) {
         self.init(
-            id: String(weaponId),
+            id: WeaponType.WeaponId(rawValue: String(weaponId)),
             thumbnail: nil,
-            image: "",
-            name: "")
+            image: WeaponType.Image.shooterShort, // ボールドマーカーを適当にセット(どうせ使わないので)
+            name: ""
+        )
     }
 }
 
@@ -222,20 +273,20 @@ extension Result.GradeType {
         // プレイヤーIDが一致する最初のプレイヤーのgradePointを取得する
         // そのようなプレイヤーがいない、gradePointが入っていない、変換不可能な値がある場合はnilを返す
         guard let gradePoint = response.playerResults.first(where: { $0.playerId == playerId })?.gradePoint,
-              let gradeName = Result.GradeName(rawValue: gradePoint) else {
+              let gradeId = Result.GradeId(rawValue: gradePoint) else {
             return nil
         }
         
         self.init(
-            longName: gradeName,
-            id: gradeName.gradeId,
-            shortName: gradeName,
-            name: gradeName
+            longName: gradeId.longName,
+            id: gradeId,
+            shortName: gradeId.shortName,
+            name: gradeId.name
         )
     }
 }
 
-extension Result.GradeName {
+extension Result.GradeId {
     init?(rawValue: Int) {
         switch rawValue {
             case 0 ..< 100:
@@ -253,20 +304,54 @@ extension Result.GradeName {
         }
     }
     
-    var gradeId: String {
+    var longName: String {
         switch self {
             case .profreshional:
-                return "5"
+                return "Profreshional"
             case .overachiver:
-                return "4"
+                return "Over achiver"
             case .gogetter:
-                return "3"
+                return "Go getter"
             case .parttimer:
-                return "2"
+                return "Part timer"
             case .apparentice:
-                return "1"
+                return "Apparantice"
             case .intern:
-                return "0"
+                return "Intern"
+        }
+    }
+    
+    var shortName: String {
+        switch self {
+            case .profreshional:
+                return "Profreshional"
+            case .overachiver:
+                return "Over achiver"
+            case .gogetter:
+                return "Go getter"
+            case .parttimer:
+                return "Part timer"
+            case .apparentice:
+                return "Apparantice"
+            case .intern:
+                return "Intern"
+        }
+    }
+    
+    var name: String {
+        switch self {
+            case .profreshional:
+                return "Profreshional"
+            case .overachiver:
+                return "Over achiver"
+            case .gogetter:
+                return "Go getter"
+            case .parttimer:
+                return "Part timer"
+            case .apparentice:
+                return "Apparantice"
+            case .intern:
+                return "Intern"
         }
     }
 }
@@ -286,10 +371,10 @@ extension Result.WaveDetail {
         self.init(
             quotaNum: response.goldenEggQuota,
             goldenIkuraPopNum: response.goldenEggAppearances,
-            waterLevel: Result.WaterLevel(name: Result.WaterName(waterLevel: response.waterId), key: Result.WaterKey(waterLevel: response.waterId)),
+            waterLevel: Result.WaterLevel(name: Result.WaterKey(waterLevel: response.waterId).waterName, key: Result.WaterKey(waterLevel: response.waterId)),
             ikuraNum: response.powerEggCollected,
             goldenIkuraNum: response.goldenEggDelivered,
-            eventType: Result.EventType(name: Result.EventName(eventType: response.eventId), key: Result.EventKey(eventType: response.eventId))
+            eventType: Result.EventType(name: Result.EventKey(eventType: response.eventId).eventName, key: Result.EventKey(eventType: response.eventId))
        )
     }
 }
@@ -320,19 +405,15 @@ extension Result.WaterKey {
                 self = .normal
         }
     }
-}
-
-extension Result.WaterName {
-    init(waterLevel: Int) {
-        switch waterLevel {
-            case 1:
-                self = .lowTide
-            case 2:
-                self = .normal
-            case 3:
-                self = .highTide
-            default:
-                self = .normal
+    
+    var waterName: String {
+        switch self {
+            case .high:
+                return "High tide"
+            case .low:
+                return "Low tide"
+            case .normal:
+                return "Normal"
         }
     }
 }
@@ -358,27 +439,23 @@ extension Result.EventKey {
                 self = .waterLevels
         }
     }
-}
-
-extension Result.EventName {
-    init(eventType: Int) {
-        switch eventType {
-            case 0:
-                self = .waterLevels
-            case 1:
-                self = .cohockCharge
-            case 2:
-                self = .theMothership
-            case 3:
-                self = .goldieSeeking
-            case 4:
-                self = .theGriller
-            case 5:
-                self = .fog
-            case 6:
-                self = .rush
-            default:
-                self = .waterLevels
+    
+    var eventName: String {
+        switch self {
+            case .waterLevels:
+                return "-"
+            case .rush:
+                return "Rush"
+            case .goldieSeeking:
+                return "Goldie Seeking"
+            case .griller:
+                return "The Griller"
+            case .fog:
+                return "Fog"
+            case .theMothership:
+                return "The Mothership"
+            case .cohockCharge:
+                return "Cohock Charge"
         }
     }
 }
@@ -390,6 +467,10 @@ extension Date {
             return Int(dateTime.timeIntervalSince1970)
         }
         return Int(dateTime.timeIntervalSince1970)
+    }
+    
+    static func iso8601Format(timestamp: Int) -> String {
+        SalmonStats.formatter.string(from: Date(timeIntervalSince1970: Double(timestamp)))
     }
 }
 
