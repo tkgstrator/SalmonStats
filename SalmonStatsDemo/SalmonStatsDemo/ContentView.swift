@@ -79,6 +79,17 @@ struct ContentView: View {
                         Text("UPLOAD RESULT")
                     })
                     Button(action: {
+                        salmonstats.uploadResults(resultId: 3575)
+                            .sink(receiveCompletion: { completion in
+                                print(completion)
+                            }, receiveValue: { response in
+                                print(response)
+                            })
+                            .store(in: &task)
+                    }, label: {
+                        Text("UPLOAD RESULTS")
+                    })
+                    Button(action: {
                         salmonstats.getResult(resultId: 1000000)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
@@ -94,7 +105,7 @@ struct ContentView: View {
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
-                                print(response)
+                                print(response.count)
                             })
                             .store(in: &task)
                     }, label: {

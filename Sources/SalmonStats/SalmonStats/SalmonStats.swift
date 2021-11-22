@@ -37,29 +37,61 @@ open class SalmonStats: SplatNet2 {
         return publish(request)
     }
     
-    public func uploadResult(resultId: Int) -> AnyPublisher<UploadResult.Response, SP2Error> {
+    public func uploadResult(resultId: Int) -> AnyPublisher<[UploadResult.Response], SP2Error> {
         Future { [self] promise in
             getCoopResult(resultId: resultId)
+                .subscribe(on: DispatchQueue(label: "SalmonStats"))
+                .receive(on: DispatchQueue(label: "SalmonStats"))
                 .flatMap({ publish(UploadResult(result: $0)) })
                 .sink(receiveCompletion: { completion in
                     print(completion)
                 }, receiveValue: { response in
-                    print(response)
+                    promise(.success(response))
+                    print(response.count)
                 })
                 .store(in: &task)
         }
         .eraseToAnyPublisher()
     }
     
-    public func getResults(nsaid: String, pageId: Int, count: Int = 50) -> AnyPublisher<ResultsStats.Response, SP2Error> {
+    public func uploadResults(resultId: Int) -> AnyPublisher<[UploadResult.Response], SP2Error> {
+        Future { [self] promise in
+            getCoopResults(resultId: resultId)
+                .flatMap({ $0.chunked(by: 10).publisher })
+                .flatMap({ publish(UploadResult(results: $0)) })
+                .collect()
+                .sink(receiveCompletion: { completion in
+                    print(completion)
+                }, receiveValue: { response in
+                    promise(.success(response.flatMap({ $0 })))
+                })
+                .store(in: &task)
+        }
+        .eraseToAnyPublisher()
+    }
+    
+    public func getResults(nsaid: String, pageId: Int, count: Int = 50) -> AnyPublisher<[Result.Response], SP2Error> {
         let request = ResultsStats(nsaid: nsaid, pageId: pageId, count: count)
-        return publish(request)
+        return Future { [self] promise in
+            publish(request)
+                .subscribe(on: DispatchQueue(label: "SalmonStats"))
+                .receive(on: DispatchQueue(label: "SalmonStats"))
+                .sink(receiveCompletion: { completion in
+                    print(completion)
+                }, receiveValue: { response in
+                    promise(.success(response.results.map({ Result.Response(from: $0, playerId: account.nsaid) })))
+                })
+                .store(in: &task)
+        }
+        .eraseToAnyPublisher()
     }
     
     public func getResult(resultId: Int) -> AnyPublisher<Result.Response, SP2Error> {
         let request = ResultStats(resultId: resultId)
         return Future { [self] promise in
             publish(request)
+                .subscribe(on: DispatchQueue(label: "SalmonStats"))
+                .receive(on: DispatchQueue(label: "SalmonStats"))
                 .sink(receiveCompletion: { completion in
                     switch completion {
                         case .finished:
@@ -142,29 +174,4 @@ extension Keychain {
         guard let value = try? get(key.rawValue) else { throw SP2Error.OAuth(.response, nil) }
         return value
     }
-}
-
-extension ResultStats.Schedule {
-//    internal enum CodingKeys: String, CodingKey {
-//        case scheduleId = "startTime"
-//        case weapons = "weaponList"
-//        case stage = "stageId"
-//        case endAt = "endTime"
-//        case rareWeaponId = "rareWeapon"
-//    }
-//
-//    public func encode(to encoder: Encoder) throws {
-//    }
-//
-//    public init(from decoder: Decoder) throws {
-//        let container = try decoder.container(keyedBy: CodingKeys.self)
-//        let startTime = try container.decode(Int.self, forKey: .scheduleId)
-//        let endTime = try container.decode(Int.self, forKey: .endAt)
-//        let stageId = try container.decode(Int.self, forKey: .stage)
-//        self.rareWeaponId = try container.decodeIfPresent(Int.self, forKey: .rareWeaponId)
-//        self.weapons = try container.decode([Int].self, forKey: .weapons)
-//        self.scheduleId = Date.iso8601Format(timestamp: startTime)
-//        self.endAt = Date.iso8601Format(timestamp: endTime)
-//        self.stageId = .shakehouse
-//    }
 }

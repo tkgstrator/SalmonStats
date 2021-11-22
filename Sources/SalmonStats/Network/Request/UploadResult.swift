@@ -20,7 +20,7 @@ public class UploadResult: RequestType {
     public var headers: [String : String]?
     
     init(results: [Result.Response]) {
-        self.parameters = ["results": results]
+        self.parameters = ["results": results.map({ $0.asJSON() })]
     }
     
     init(result: Result.Response) {
