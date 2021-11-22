@@ -83,7 +83,7 @@ struct ContentView: View {
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
-                                print(response)
+                                print(response.first)
                             })
                             .store(in: &task)
                     }, label: {
@@ -101,7 +101,18 @@ struct ContentView: View {
                         Text("GET RESULT")
                     })
                     Button(action: {
-                        salmonstats.getResults(nsaid: salmonstats.account.nsaid, pageId: 1)
+                        salmonstats.getResults(pageId: 1)
+                            .sink(receiveCompletion: { completion in
+                                print(completion)
+                            }, receiveValue: { response in
+                                print(response.count)
+                            })
+                            .store(in: &task)
+                    }, label: {
+                        Text("GET RESULTS")
+                    })
+                    Button(action: {
+                        salmonstats.getResults(from: 1, to: 2)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
