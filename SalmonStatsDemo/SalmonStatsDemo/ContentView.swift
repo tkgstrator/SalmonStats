@@ -68,6 +68,17 @@ struct ContentView: View {
                 })
                 Section(content: {
                     Button(action: {
+                        salmonstats.uploadResult(resultId: 3590)
+                            .sink(receiveCompletion: { completion in
+                                print(completion)
+                            }, receiveValue: { response in
+                                print(response)
+                            })
+                            .store(in: &task)
+                    }, label: {
+                        Text("UPLOAD RESULT")
+                    })
+                    Button(action: {
                         salmonstats.getResult(resultId: 1000000)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
@@ -78,7 +89,15 @@ struct ContentView: View {
                     }, label: {
                         Text("GET RESULT")
                     })
-                    Button(action: { }, label: {
+                    Button(action: {
+                        salmonstats.getResults(nsaid: salmonstats.account.nsaid, pageId: 1)
+                            .sink(receiveCompletion: { completion in
+                                print(completion)
+                            }, receiveValue: { response in
+                                print(response)
+                            })
+                            .store(in: &task)
+                    }, label: {
                         Text("GET RESULTS")
                     })
                 }, header: {

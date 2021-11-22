@@ -34,7 +34,7 @@ public class ResultStats: RequestType {
         public let goldenEggDelivered, powerEggCollected, bossAppearanceCount, bossEliminationCount: Int
         public let isEligibleForNoNightRecord: Bool
         public let memberAccounts: [MemberAccount]
-        public let schedule: Schedule
+        public let schedule: Schedule?
         public let playerResults: [PlayerResult]
         public let waves: [Wave]
     }
@@ -88,10 +88,18 @@ public class ResultStats: RequestType {
     public struct Schedule: Codable {
         public let scheduleId, endAt: String
         public let weapons: [Int]
-        public let stageId: Int
+        public let stageId: StageId
         public let rareWeaponId: Int?
     }
 
+    public enum StageId: Int, Codable, CaseIterable {
+        case shakeup = 1
+        case shakeship = 2
+        case shakehouse = 3
+        case shakelift = 4
+        case shakeride = 5
+    }
+    
     // MARK: - Wave
     public struct Wave: Codable {
         public let wave, eventId, waterId, goldenEggQuota: Int
