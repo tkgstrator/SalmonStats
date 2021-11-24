@@ -28,9 +28,9 @@ public class UploadResult: RequestType {
     }
 
     public struct Response: Codable {
-        var created: Bool
-        var jobId: Int
-        var salmonId: Int
+        public var created: Bool
+        public var jobId: Int
+        public var salmonId: Int
     }
 }
 

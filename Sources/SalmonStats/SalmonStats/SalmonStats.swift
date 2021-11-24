@@ -67,7 +67,7 @@ open class SalmonStats: SplatNet2 {
                     return response.chunked(by: 10).publisher
                 })
                 .flatMap({ publish(UploadResult(results: $0)) })
-                .replaceError(with: UploadResult.ResponseType())
+//                .replaceError(with: UploadResult.ResponseType())
                 .collect()
                 .subscribe(on: DispatchQueue(label: "SalmonStats"))
                 .receive(on: DispatchQueue(label: "SalmonStats"))
@@ -154,10 +154,15 @@ open class SalmonStats: SplatNet2 {
                 urlRequest.headers.add(.authorization(bearerToken: apiToken))
                 completion(.success(urlRequest))
             } else {
+                if sessionToken.isEmpty {
+                    completion(.failure(SP2Error.Common(.unavailable, nil)))
+                }
                 // SplatNet2
                 var urlRequest = urlRequest
                 urlRequest.headers.add(.userAgent("Salmonia3/tkgling"))
-                urlRequest.headers.add(HTTPHeader(name: "cookie", value: "iksm_session=\(iksmSession)"))
+                if !iksmSession.isEmpty {
+                    urlRequest.headers.add(HTTPHeader(name: "cookie", value: "iksm_session=\(iksmSession)"))
+                }
                 completion(.success(urlRequest))
             }
         } else {
