@@ -154,9 +154,6 @@ open class SalmonStats: SplatNet2 {
                 urlRequest.headers.add(.authorization(bearerToken: apiToken))
                 completion(.success(urlRequest))
             } else {
-                if sessionToken.isEmpty {
-                    completion(.failure(SP2Error.Common(.unavailable, nil)))
-                }
                 // SplatNet2
                 var urlRequest = urlRequest
                 urlRequest.headers.add(.userAgent("Salmonia3/tkgling"))
@@ -173,7 +170,7 @@ open class SalmonStats: SplatNet2 {
     override open func retry(_ request: Request, for session: Session, dueTo error: Error, completion: @escaping (RetryResult) -> Void) {
         if let url = request.request?.url?.absoluteString {
             if url.contains("salmon-stats") {
-                // SplatNet2
+                // SalmonStats
                 guard let apiToken = apiToken else {
                     completion(.doNotRetry)
                     return

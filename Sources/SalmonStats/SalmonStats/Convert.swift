@@ -124,12 +124,12 @@ extension ResultStats.SpecialId {
 }
 
 extension Result.BossCount {
-    init(bossId: Result.BossId, count: Int) {
+    init(bossId: Result.BossType, count: Int) {
         self.init(boss: Result.Boss(bossId: bossId), count: count)
     }
 }
 
-extension Result.BossId {
+extension Result.BossType {
     var bossName: String {
         switch self {
             case .goldie:
@@ -159,7 +159,7 @@ extension Result.Boss {
         case go
     }
     
-    init(bossId: Result.BossId) {
+    init(bossId: Result.BossType) {
         switch bossId {
             case .goldie:
                 self = Result.Boss(name: bossId.rawValue, key: .sakelienGolden)
@@ -406,7 +406,7 @@ extension Result.WaterKey {
         }
     }
     
-    var waterName: String {
+    public var waterName: String {
         switch self {
             case .high:
                 return "High tide"
@@ -440,7 +440,7 @@ extension Result.EventKey {
         }
     }
     
-    var eventName: String {
+    public var eventName: String {
         switch self {
             case .waterLevels:
                 return "-"

@@ -27,7 +27,7 @@ public class ResultStats: RequestType {
         public let id: Int
         public let scheduleId, startAt: String
         public let members: [String]
-        public let bossAppearances: CodableDictionary<Result.BossId, Int>
+        public let bossAppearances: CodableDictionary<Result.BossType, Int>
         public let uploaderUserId, clearWaves: Int
         public let failReasonId: Int?
         public let dangerRate, createdAt, updatedAt: String
@@ -63,7 +63,7 @@ public class ResultStats: RequestType {
 
     // MARK: - BossEliminations
     public struct BossEliminations: Codable {
-        public let counts: CodableDictionary<Result.BossId, Int>
+        public let counts: CodableDictionary<Result.BossType, Int>
     }
     
     // MARK: - SpecialType
