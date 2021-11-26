@@ -61,7 +61,7 @@ open class SalmonStats: SplatNet2 {
     public func uploadResults(resultId: Int) -> AnyPublisher<[(UploadResult.Response, Result.Response)], SP2Error> {
         var results: [Result.Response] = []
         return Future { [self] promise in
-            getCoopResults(resultId: resultId)
+            getCoopResults()
                 .flatMap({ response -> Publishers.Sequence<[[Result.Response]], Never> in
                     results = response
                     return response.chunked(by: 10).publisher
@@ -75,8 +75,8 @@ open class SalmonStats: SplatNet2 {
                     switch completion {
                         case .finished:
                             break
-                        case .failure:
-                            promise(.failure(SP2Error.Common(.badrequest, nil)))
+                        case .failure(let error):
+                            promise(.failure(error))
                     }
                 }, receiveValue: { response in
                     let salmonstats = response.flatMap({ $0 }).sorted(by: { $0.jobId < $1.jobId })
@@ -142,58 +142,85 @@ open class SalmonStats: SplatNet2 {
     }
     
     override open func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Swift.Result<URLRequest, Error>) -> Void) {
-        if let url = urlRequest.url?.absoluteString {
-            if url.contains("salmon-stats") {
-                guard let apiToken = apiToken else {
-                    completion(.failure(SP2Error.OAuth(.code, nil)))
+        var urlRequest = urlRequest
+        switch urlRequest.serverType {
+        case .splatnet2(let type):
+            switch type {
+            case .app:
+                guard let iksmSession = iksmSession else {
+                    completion(.failure(SP2Error.oauthValidationFailed(reason: .invalidState)))
                     return
                 }
-                // Salmon Stats
-                var urlRequest = urlRequest
-                urlRequest.headers.add(.userAgent("Salmonia3/tkgling"))
-                urlRequest.headers.add(.authorization(bearerToken: apiToken))
-                completion(.success(urlRequest))
-            } else {
-                // SplatNet2
-                var urlRequest = urlRequest
-                urlRequest.headers.add(.userAgent("Salmonia3/tkgling"))
-                if !iksmSession.isEmpty {
-                    urlRequest.headers.add(HTTPHeader(name: "cookie", value: "iksm_session=\(iksmSession)"))
-                }
-                completion(.success(urlRequest))
+                urlRequest.headers.add(HTTPHeader(name: "cookie", value: "iksm_session=\(iksmSession)"))
+            case .nso:
+                break
             }
-        } else {
-            completion(.failure(SP2Error.Common(.unavailable, nil)))
+            completion(.success(urlRequest))
+            return
+        case .salmonstats:
+            guard let apiToken = apiToken else {
+                completion(.failure(SP2Error.oauthValidationFailed(reason: .invalidState)))
+                return
+            }
+            urlRequest.headers.add(.userAgent("Salmonia3/tkgling"))
+            urlRequest.headers.add(.authorization(bearerToken: apiToken))
+            completion(.success(urlRequest))
+            return
         }
     }
     
     override open func retry(_ request: Request, for session: Session, dueTo error: Error, completion: @escaping (RetryResult) -> Void) {
-        if let url = request.request?.url?.absoluteString {
-            if url.contains("salmon-stats") {
-                // SalmonStats
-                guard let apiToken = apiToken else {
-                    completion(.doNotRetry)
-                    return
-                }
-            } else {
-                // SplatNet2
+        switch request.request?.serverType {
+        case .splatnet2(_):
+            if let statusCode = request.response?.statusCode, statusCode == 403, let sessionToken = sessionToken {
                 getCookie(sessionToken: sessionToken)
                     .sink(receiveCompletion: { result in
                         switch result {
                         case .finished:
                             break
                         case .failure(let error):
-                            completion(.doNotRetry)
+                            completion(.doNotRetryWithError(error))
                         }
                     }, receiveValue: { response in
+                        // アカウント情報を更新
                         self.account = response
                         completion(.retry)
                     })
                     .store(in: &task)
+            } else {
+                completion(.doNotRetry)
+                return
             }
-        } else {
+        case .salmonstats:
+            guard let _ = apiToken else {
+                completion(.doNotRetry)
+                return
+            }
+        default:
             completion(.doNotRetry)
         }
+    }
+}
+
+enum ServerType {
+    case splatnet2(APIType)
+    case salmonstats
+    
+    enum APIType {
+        case app
+        case nso
+    }
+}
+
+extension URLRequest {
+    var serverType: ServerType {
+        if let url = self.url, url.absoluteString.contains("salmon-stats") {
+            return .salmonstats
+        }
+        if let url = self.url, url.absoluteString.contains("app.splatoon2.nintendo.net") {
+            return .splatnet2(.app)
+        }
+        return .splatnet2(.nso)
     }
 }
 
@@ -207,7 +234,7 @@ extension Keychain {
     }
     
     func getValue(key: KeyType) throws -> String {
-        guard let value = try? get(key.rawValue) else { throw SP2Error.OAuth(.response, nil) }
+        guard let value = try? get(key.rawValue) else { throw SP2Error.dataDecodingFailed }
         return value
     }
 }
