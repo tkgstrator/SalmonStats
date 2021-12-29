@@ -25,9 +25,12 @@ struct ContentView: View {
                     Button(action: { isPresented[0].toggle() }, label: {
                         Text("SplatNet2")
                     })
-                        .authorize(isPresented: $isPresented[0], manager: service) { completion in
+                        .authorize(isPresented: $isPresented[0], manager: service as SplatNet2) { completion in
                             print(completion)
                         }
+                    Button(action: { service.revokeIksmSession() }, label: {
+                        Text("Revoke IksmSession")
+                    })
                     Button(action: { isPresented[1].toggle() }, label: {
                         Text("Salmon Stats")
                     })
@@ -67,7 +70,7 @@ struct ContentView: View {
                 })
                 Section(content: {
                     Button(action: {
-                        service.uploadResult(resultId: 1840)
+                        service.uploadResult(resultId: 3585)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -78,7 +81,7 @@ struct ContentView: View {
                         Text("UPLOAD RESULT")
                     })
                     Button(action: {
-                        service.uploadResults(resultId: 1835)
+                        service.uploadResults(resultId: 3590)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -126,7 +129,7 @@ struct ContentView: View {
                 })
                 Section(content: {
                     Button(action: {
-                        service.getCoopResult(resultId: 1840)
+                        service.getCoopResult(resultId: 3580)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -137,7 +140,7 @@ struct ContentView: View {
                         Text("GET RESULT")
                     })
                     Button(action: {
-                        service.getCoopResults(resultId: 1835)
+                        service.getCoopResults(resultId: 3585)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -170,6 +173,12 @@ struct ContentView: View {
                     Text("api-token")
                     Spacer()
                     Text(service.apiToken)
+                        .foregroundColor(.secondary)
+                })
+                HStack(content: {
+                    Text("x-product version")
+                    Spacer()
+                    Text(service.version)
                         .foregroundColor(.secondary)
                 })
                 HStack(content: {

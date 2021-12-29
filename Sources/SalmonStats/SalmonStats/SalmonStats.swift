@@ -13,6 +13,10 @@ import KeychainAccess
 import CocoaLumberjackSwift
 
 open class SalmonStats: SplatNet2 {
+    override public init(userAgent: String = "SalmonStats") {
+        super.init(userAgent: userAgent)
+    }
+    
     public var apiToken: String? {
         get {
             try? keychain.getValue(key: .apiToken)
@@ -145,33 +149,40 @@ open class SalmonStats: SplatNet2 {
         }
         .eraseToAnyPublisher()
     }
-    
+//    
     open override func publish<T>(_ request: T) -> AnyPublisher<T.ResponseType, SP2Error> where T : RequestType {
-        return session
-            .request(request, interceptor: self)
-            .cURLDescription { request in
-                DDLogInfo(request)
-            }
-            .validationWithSP2Error(decoder: decoder)
-            .publishDecodable(type: T.ResponseType.self, decoder: decoder)
-            .value()
-            .mapError({ error -> SP2Error in
-                DDLogError(error)
-                guard let sp2Error = error.asSP2Error else {
-                    return SP2Error.responseValidationFailed(reason: .unacceptableStatusCode(code: error.responseCode ?? 999), failure: nil)
+        if let url = request.urlRequest?.url?.absoluteString, url.contains("salmon-stats") {
+            return session
+                .request(request, interceptor: self)
+                .cURLDescription { request in
+                    DDLogInfo(request)
                 }
-                return sp2Error
-            })
-            .eraseToAnyPublisher()
+                .validationWithSP2Error(decoder: decoder)
+                .publishDecodable(type: T.ResponseType.self, decoder: decoder)
+                .value()
+                .mapError({ error -> SP2Error in
+                    DDLogError(error)
+                    guard let sp2Error = error.asSP2Error else {
+                        return SP2Error.responseValidationFailed(reason: .unacceptableStatusCode(code: error.responseCode ?? 999), failure: nil)
+                    }
+                    return sp2Error
+                })
+                .eraseToAnyPublisher()
+        } else {
+            return super.publish(request)
+        }
     }
     
     open override func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Swift.Result<URLRequest, Error>) -> Void) {
-        guard let apiToken = apiToken else {
-            completion(.failure(SP2Error.dataDecodingFailed))
-            return
-        }
         var urlRequest = urlRequest
-        urlRequest.headers.add(.authorization(bearerToken: apiToken))
-        completion(.success(urlRequest))
+        if let url = urlRequest.url?.absoluteString, url.contains("salmon-stats") {
+            guard let apiToken = apiToken else {
+                completion(.failure(SP2Error.credentialFailed))
+                return
+            }
+            urlRequest.headers.add(.authorization(bearerToken: apiToken))
+        }
+//        urlRequest.headers.add(.userAgent(userAgent))
+        super.adapt(urlRequest, for: session, completion: completion)
     }
 }
