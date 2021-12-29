@@ -7,12 +7,14 @@
 //
 
 import SwiftUI
+import SalmonStats
 
 @main
 struct SalmonStatsDemoApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(SalmonStats(userAgent: "SalmonStats/@tkgling"))
         }
     }
 }

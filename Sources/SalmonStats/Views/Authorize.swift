@@ -1,6 +1,6 @@
 //
 //  Authorize.swift
-//  
+//  SalmonStats
 //
 //  Created by devonly on 2021/10/19.
 //

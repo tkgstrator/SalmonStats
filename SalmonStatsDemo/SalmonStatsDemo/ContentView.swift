@@ -9,12 +9,11 @@
 import SwiftUI
 import SalmonStats
 import Combine
-import BetterSafariView
+//import BetterSafariView
 import SplatNet2
 
-let salmonstats = SalmonStats()
-
 struct ContentView: View {
+    @EnvironmentObject var service: SalmonStats
     @State private var task = Set<AnyCancellable>()
     @State private var isPresented: [Bool] = Array(repeating: false, count: 2)
     @State private var SP2Error: SP2Error?
@@ -26,13 +25,13 @@ struct ContentView: View {
                     Button(action: { isPresented[0].toggle() }, label: {
                         Text("SplatNet2")
                     })
-                        .authorize(isPresented: $isPresented[0], manager: salmonstats) { completion in
+                        .authorize(isPresented: $isPresented[0], manager: service) { completion in
                             print(completion)
                         }
                     Button(action: { isPresented[1].toggle() }, label: {
                         Text("Salmon Stats")
                     })
-                        .authorizeToken(isPresented: $isPresented[1], manager: salmonstats) { completion in
+                        .authorizeToken(isPresented: $isPresented[1], manager: service) { completion in
                             print(completion)
                         }
                     
@@ -41,7 +40,7 @@ struct ContentView: View {
                 })
                 Section(content: {
                     Button(action: {
-                        salmonstats.getMetadata(nsaid: "91d160aa84e88da6")
+                        service.getMetadata(nsaid: "91d160aa84e88da6")
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -52,7 +51,7 @@ struct ContentView: View {
                         Text("GET METADATA")
                     })
                     Button(action: {
-                        salmonstats.getPlayerMetadata(nsaid: "91d160aa84e88da6")
+                        service.getPlayerMetadata(nsaid: "91d160aa84e88da6")
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -68,7 +67,7 @@ struct ContentView: View {
                 })
                 Section(content: {
                     Button(action: {
-                        salmonstats.uploadResult(resultId: 3590)
+                        service.uploadResult(resultId: 1840)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -79,7 +78,7 @@ struct ContentView: View {
                         Text("UPLOAD RESULT")
                     })
                     Button(action: {
-                        salmonstats.uploadResults(resultId: 3575)
+                        service.uploadResults(resultId: 1835)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -90,7 +89,7 @@ struct ContentView: View {
                         Text("UPLOAD RESULTS")
                     })
                     Button(action: {
-                        salmonstats.getResult(resultId: 1000000)
+                        service.getResult(resultId: 1000000)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -101,7 +100,7 @@ struct ContentView: View {
                         Text("GET RESULT")
                     })
                     Button(action: {
-                        salmonstats.getResults(pageId: 1)
+                        service.getResults(pageId: 1)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -109,10 +108,10 @@ struct ContentView: View {
                             })
                             .store(in: &task)
                     }, label: {
-                        Text("GET RESULTS")
+                        Text("GET RESULTS(PAGE)")
                     })
                     Button(action: {
-                        salmonstats.getResults(from: 1, to: 2)
+                        service.getResults(from: 1, to: 2)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -120,14 +119,14 @@ struct ContentView: View {
                             })
                             .store(in: &task)
                     }, label: {
-                        Text("GET RESULTS")
+                        Text("GET RESULTS(PAGES)")
                     })
                 }, header: {
                     Text("Salmon Stats")
                 })
                 Section(content: {
                     Button(action: {
-                        salmonstats.getCoopResult(resultId: 3590)
+                        service.getCoopResult(resultId: 1840)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
@@ -138,11 +137,11 @@ struct ContentView: View {
                         Text("GET RESULT")
                     })
                     Button(action: {
-                        salmonstats.getCoopResults(resultId: 3580)
+                        service.getCoopResults(resultId: 1835)
                             .sink(receiveCompletion: { completion in
                                 print(completion)
                             }, receiveValue: { response in
-                                print(response)
+                                print(response.count)
                             })
                             .store(in: &task)
                         
@@ -158,19 +157,25 @@ struct ContentView: View {
                 HStack(content: {
                     Text("nsaid")
                     Spacer()
-                    Text(salmonstats.account.nsaid)
+                    Text(service.account?.credential.nsaid)
                         .foregroundColor(.secondary)
                 })
                 HStack(content: {
                     Text("iksm_session")
                     Spacer()
-                    Text(salmonstats.account.iksmSession.prefix(16))
+                    Text(service.account?.credential.iksmSession)
                         .foregroundColor(.secondary)
                 })
                 HStack(content: {
                     Text("api-token")
                     Spacer()
-                    Text(salmonstats.apiToken == nil ? "" : salmonstats.apiToken!.prefix(16))
+                    Text(service.apiToken)
+                        .foregroundColor(.secondary)
+                })
+                HStack(content: {
+                    Text("jobNum")
+                    Spacer()
+                    Text(service.account?.coop.jobNum)
                         .foregroundColor(.secondary)
                 })
             })
@@ -186,20 +191,5 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
-    }
-}
-
-extension String {
-    func capture(pattern: String, group: Int) -> String? {
-        let result = capture(pattern: pattern, group: [group])
-        return result.isEmpty ? nil : result[0]
-    }
-    
-    private func capture(pattern: String, group: [Int]) -> [String] {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
-        guard let matched = regex.firstMatch(in: self, range: NSRange(location: 0, length: self.count)) else { return [] }
-        return group.map { group -> String in
-            return (self as NSString).substring(with: matched.range(at: group))
-        }
     }
 }
