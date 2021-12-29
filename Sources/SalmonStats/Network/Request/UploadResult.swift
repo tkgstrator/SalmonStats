@@ -8,7 +8,6 @@
 import Foundation
 import Alamofire
 import SplatNet2
-import SwiftyJSON
 
 public class UploadResult: RequestType {
     public typealias ResponseType = [UploadResult.Response]

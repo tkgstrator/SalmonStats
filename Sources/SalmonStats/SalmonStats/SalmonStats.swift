@@ -10,6 +10,7 @@ import Alamofire
 import Combine
 import SplatNet2
 import KeychainAccess
+import CocoaLumberjackSwift
 
 open class SalmonStats: SplatNet2 {
     public var apiToken: String? {
@@ -21,10 +22,6 @@ open class SalmonStats: SplatNet2 {
                 keychain.setValue(newValue, key: .apiToken)
             }
         }
-    }
-    
-    public override init(version: String = "1.13.2") {
-        super.init(version: version)
     }
     
     public func getMetadata(nsaid: String) -> AnyPublisher<[Metadata.Response], SP2Error> {
@@ -105,7 +102,11 @@ open class SalmonStats: SplatNet2 {
     }
     
     public func getResults(pageId: Int, count: Int = 50) -> AnyPublisher<[Result.Response], SP2Error> {
-        let request = ResultsStats(nsaid: account.nsaid, pageId: pageId, count: count)
+        guard let nsaid = account?.credential.nsaid else {
+            return Fail(outputType: [Result.Response].self, failure: SP2Error.credentialFailed)
+                .eraseToAnyPublisher()
+        }
+        let request = ResultsStats(nsaid: nsaid, pageId: pageId, count: count)
         return Future { [self] promise in
             publish(request)
                 .subscribe(on: DispatchQueue(label: "SalmonStats"))
@@ -113,7 +114,7 @@ open class SalmonStats: SplatNet2 {
                 .sink(receiveCompletion: { completion in
                     print(completion)
                 }, receiveValue: { response in
-                    promise(.success(response.results.map({ Result.Response(from: $0, playerId: account.nsaid) })))
+                    promise(.success(response.results.map({ Result.Response(from: $0, playerId: nsaid) })))
                 })
                 .store(in: &task)
         }
@@ -121,6 +122,10 @@ open class SalmonStats: SplatNet2 {
     }
     
     public func getResult(resultId: Int) -> AnyPublisher<Result.Response, SP2Error> {
+        guard let nsaid = account?.credential.nsaid else {
+            return Fail(outputType: Result.Response.self, failure: SP2Error.credentialFailed)
+                .eraseToAnyPublisher()
+        }
         let request = ResultStats(resultId: resultId)
         return Future { [self] promise in
             publish(request)
@@ -134,107 +139,39 @@ open class SalmonStats: SplatNet2 {
                             promise(.failure(error))
                     }
                 }, receiveValue: { response in
-                    promise(.success(Result.Response(from: response, playerId: account.nsaid)))
+                    promise(.success(Result.Response(from: response, playerId: nsaid)))
                 })
                 .store(in: &task)
         }
         .eraseToAnyPublisher()
     }
     
-    override open func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Swift.Result<URLRequest, Error>) -> Void) {
-        var urlRequest = urlRequest
-        switch urlRequest.serverType {
-        case .splatnet2(let type):
-            switch type {
-            case .app:
-                guard let iksmSession = iksmSession else {
-                    completion(.failure(SP2Error.oauthValidationFailed(reason: .invalidState)))
-                    return
+    open override func publish<T>(_ request: T) -> AnyPublisher<T.ResponseType, SP2Error> where T : RequestType {
+        return session
+            .request(request, interceptor: self)
+            .cURLDescription { request in
+                DDLogInfo(request)
+            }
+            .validationWithSP2Error(decoder: decoder)
+            .publishDecodable(type: T.ResponseType.self, decoder: decoder)
+            .value()
+            .mapError({ error -> SP2Error in
+                DDLogError(error)
+                guard let sp2Error = error.asSP2Error else {
+                    return SP2Error.responseValidationFailed(reason: .unacceptableStatusCode(code: error.responseCode ?? 999), failure: nil)
                 }
-                urlRequest.headers.add(HTTPHeader(name: "cookie", value: "iksm_session=\(iksmSession)"))
-            case .nso:
-                break
-            }
-            completion(.success(urlRequest))
-            return
-        case .salmonstats:
-            guard let apiToken = apiToken else {
-                completion(.failure(SP2Error.oauthValidationFailed(reason: .invalidState)))
-                return
-            }
-            urlRequest.headers.add(.userAgent("Salmonia3/tkgling"))
-            urlRequest.headers.add(.authorization(bearerToken: apiToken))
-            completion(.success(urlRequest))
+                return sp2Error
+            })
+            .eraseToAnyPublisher()
+    }
+    
+    open override func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Swift.Result<URLRequest, Error>) -> Void) {
+        guard let apiToken = apiToken else {
+            completion(.failure(SP2Error.dataDecodingFailed))
             return
         }
-    }
-    
-    override open func retry(_ request: Request, for session: Session, dueTo error: Error, completion: @escaping (RetryResult) -> Void) {
-        switch request.request?.serverType {
-        case .splatnet2(_):
-            if let statusCode = request.response?.statusCode, statusCode == 403, let sessionToken = sessionToken {
-                getCookie(sessionToken: sessionToken)
-                    .sink(receiveCompletion: { result in
-                        switch result {
-                        case .finished:
-                            break
-                        case .failure(let error):
-                            completion(.doNotRetryWithError(error))
-                        }
-                    }, receiveValue: { response in
-                        // アカウント情報を更新
-                        self.account = response
-                        completion(.retry)
-                    })
-                    .store(in: &task)
-            } else {
-                completion(.doNotRetry)
-                return
-            }
-        case .salmonstats:
-            guard let _ = apiToken else {
-                completion(.doNotRetry)
-                return
-            }
-        default:
-            completion(.doNotRetry)
-        }
-    }
-}
-
-enum ServerType {
-    case splatnet2(APIType)
-    case salmonstats
-    
-    enum APIType {
-        case app
-        case nso
-    }
-}
-
-extension URLRequest {
-    var serverType: ServerType {
-        if let url = self.url, url.absoluteString.contains("salmon-stats") {
-            return .salmonstats
-        }
-        if let url = self.url, url.absoluteString.contains("app.splatoon2.nintendo.net") {
-            return .splatnet2(.app)
-        }
-        return .splatnet2(.nso)
-    }
-}
-
-public enum KeyType: String, CaseIterable {
-    case apiToken
-}
-
-extension Keychain {
-    func setValue(_ value: String, key: KeyType) {
-        try? set(value, key: key.rawValue)
-    }
-    
-    func getValue(key: KeyType) throws -> String {
-        guard let value = try? get(key.rawValue) else { throw SP2Error.dataDecodingFailed }
-        return value
+        var urlRequest = urlRequest
+        urlRequest.headers.add(.authorization(bearerToken: apiToken))
+        completion(.success(urlRequest))
     }
 }
