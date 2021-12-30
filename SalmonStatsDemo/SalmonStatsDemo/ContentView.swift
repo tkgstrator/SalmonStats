@@ -28,9 +28,6 @@ struct ContentView: View {
                         .authorize(isPresented: $isPresented[0], manager: service as SplatNet2) { completion in
                             print(completion)
                         }
-                    Button(action: { service.revokeIksmSession() }, label: {
-                        Text("Revoke IksmSession")
-                    })
                     Button(action: { isPresented[1].toggle() }, label: {
                         Text("Salmon Stats")
                     })

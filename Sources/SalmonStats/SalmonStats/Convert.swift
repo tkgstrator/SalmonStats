@@ -70,7 +70,7 @@ extension Result.SpecialType {
 }
 
 extension ResultStats.SpecialId {
-    var imageA: Result.ImageA {
+    var imageA: ImageA {
         switch self {
             case .splatBombLauncher:
                 return .splatBombLauncher
@@ -83,7 +83,7 @@ extension ResultStats.SpecialId {
         }
     }
     
-    var imageB: Result.ImageB {
+    var imageB: ImageB {
         switch self {
             case .splatBombLauncher:
                 return .splatBombLauncher
@@ -109,7 +109,7 @@ extension ResultStats.SpecialId {
         }
     }
     
-    var specialId: Result.SpecialId {
+    var specialId: SpecialId {
         switch self {
             case .splatBombLauncher:
                 return .splatBombLauncher
@@ -124,12 +124,12 @@ extension ResultStats.SpecialId {
 }
 
 extension Result.BossCount {
-    init(bossId: Result.BossType, count: Int) {
+    init(bossId: BossType, count: Int) {
         self.init(boss: Result.Boss(bossId: bossId), count: count)
     }
 }
 
-extension Result.BossType {
+extension BossType {
     var bossName: String {
         switch self {
             case .goldie:
@@ -159,7 +159,7 @@ extension Result.Boss {
         case go
     }
     
-    init(bossId: Result.BossType) {
+    init(bossId: BossType) {
         switch bossId {
             case .goldie:
                 self = Result.Boss(name: bossId.rawValue, key: .sakelienGolden)
@@ -198,7 +198,7 @@ extension Result.Schedule {
 
 extension Result.Stage {
     init(from schedule: Schedule.Response) {
-        let stageImage: Result.StageType.Image = Result.StageType.Image(stageId: schedule.stageId)
+        let stageImage: StageType.Image = StageType.Image(stageId: schedule.stageId)
         self.init(
             name: stageImage.stageName,
             image: stageImage
@@ -206,7 +206,7 @@ extension Result.Stage {
     }
 }
 
-extension Result.StageType.Image {
+extension StageType.Image {
     init(stageId: Schedule.StageId) {
         switch stageId {
             case .shakeup:
@@ -273,7 +273,7 @@ extension Result.GradeType {
         // プレイヤーIDが一致する最初のプレイヤーのgradePointを取得する
         // そのようなプレイヤーがいない、gradePointが入っていない、変換不可能な値がある場合はnilを返す
         guard let gradePoint = response.playerResults.first(where: { $0.playerId == playerId })?.gradePoint,
-              let gradeId = Result.GradeId(rawValue: gradePoint) else {
+              let gradeId = GradeId(rawValue: gradePoint) else {
             return nil
         }
         
@@ -286,7 +286,7 @@ extension Result.GradeType {
     }
 }
 
-extension Result.GradeId {
+extension GradeId {
     init?(rawValue: Int) {
         switch rawValue {
             case 0 ..< 100:
@@ -361,7 +361,7 @@ extension Result.JobResult {
         self.init(
             failureWave: response.clearWaves == 3 ? nil : response.clearWaves,
             isClear: response.clearWaves == 3,
-            failureReason: Result.FailureReason(rawValue: response.failReasonId)
+            failureReason: FailureReason(rawValue: response.failReasonId)
         )
     }
 }
@@ -371,15 +371,15 @@ extension Result.WaveDetail {
         self.init(
             quotaNum: response.goldenEggQuota,
             goldenIkuraPopNum: response.goldenEggAppearances,
-            waterLevel: Result.WaterLevel(name: Result.WaterKey(waterLevel: response.waterId).waterName, key: Result.WaterKey(waterLevel: response.waterId)),
+            waterLevel: Result.WaterLevel(name: WaterKey(waterLevel: response.waterId).waterName, key: WaterKey(waterLevel: response.waterId)),
             ikuraNum: response.powerEggCollected,
             goldenIkuraNum: response.goldenEggDelivered,
-            eventType: Result.EventType(name: Result.EventKey(eventType: response.eventId).eventName, key: Result.EventKey(eventType: response.eventId))
+            eventType: Result.EventType(name: EventKey(eventType: response.eventId).eventName, key: EventKey(eventType: response.eventId))
        )
     }
 }
 
-extension Result.FailureReason {
+extension FailureReason {
     init?(rawValue: Int?) {
         switch rawValue {
             case 1:
@@ -392,7 +392,7 @@ extension Result.FailureReason {
     }
 }
 
-extension Result.WaterKey {
+extension WaterKey {
     init(waterLevel: Int) {
         switch waterLevel {
             case 1:
@@ -418,7 +418,7 @@ extension Result.WaterKey {
     }
 }
 
-extension Result.EventKey {
+extension EventKey {
     init(eventType: Int) {
         switch eventType {
             case 0:
