@@ -194,6 +194,16 @@ struct ContentView: View {
     }
 }
 
+extension Text {
+    init<T: LosslessStringConvertible>(_ content: Optional<T>) {
+        if let content = content {
+            self.init(verbatim: String(content))
+        } else {
+            self.init(verbatim: "-")
+        }
+    }
+}
+
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
